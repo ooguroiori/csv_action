@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約データ解析</title>
+</head>
+<body>
+    <h1>CSV予約データ解析</h1>
+    <input type="file" id="csvFileInput" accept=".csv" />
+    <button onclick="processCSV()">解析開始</button>
+
+    <h2>結果</h2>
+    <div id="output"></div>
+
+    <script>
+        function processCSV() {
+            const fileInput = document.getElementById('csvFileInput').files[0];
+            if (!fileInput) {
+                alert('CSVファイルを選択してください。');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const csvData = event.target.result;
+                const lines = csvData.split('\n');
+
+                const data = [];
+                for (let i = 0; i < lines.length; i++) {
+                    const row = lines[i].split(',');
+                    if (row.length === 2) {
+                        const count = parseInt(row[0], 10);
+                        const date = row[1].trim();
+                        data.push({ count, date });
+                    }
+                }
+
+                calculateStatistics(data);
+            };
+            reader.readAsText(fileInput);
+        }
+
+        function calculateStatistics(data) {
+            const dailyData = {};
+            const monthlyData = {};
+
+            data.forEach(item => {
+                const date = item.date;
+                const month = date.slice(0, 7); // YYYY-MMの形式で取得
+                const count = item.count;
+
+                // 日ごとの集計
+                if (!dailyData[date]) {
+                    dailyData[date] = [];
+                }
+                dailyData[date].push(count);
+
+                // 月ごとの集計
+                if (!monthlyData[month]) {
+                    monthlyData[month] = [];
+                }
+                monthlyData[month].push(count);
+            });
+
+            // 日別の最大・最小来場者数
+            let maxVisitors = -Infinity;
+            let minVisitors = Infinity;
+            const maxDates = [];
+            const minDates = [];
+
+            Object.keys(dailyData).forEach(date => {
+                const totalReservations = dailyData[date].reduce((a, b) => a + b, 0);
+
+                // 最大来場者数の更新
+                if (totalReservations > maxVisitors) {
+                    maxVisitors = totalReservations;
+                    maxDates.length = 0; // リセット
+                    maxDates.push(date);
+                } else if (totalReservations === maxVisitors) {
+                    maxDates.push(date);
+                }
+
+                // 最小来場者数の更新
+                if (totalReservations < minVisitors) {
+                    minVisitors = totalReservations;
+                    minDates.length = 0; // リセット
+                    minDates.push(date);
+                } else if (totalReservations === minVisitors) {
+                    minDates.push(date);
+                }
+            });
+
+            let result = '<h3>最大来場者数</h3>';
+            result += `<p>${maxVisitors}人</p>`;
+            result += '<ul>';
+            maxDates.forEach(date => {
+                result += `<li>${date}</li>`;
+            });
+            result += '</ul>';
+
+            result += '<h3>最小来場者数</h3>';
+            result += `<p>${minVisitors}人</p>`;
+            result += '<ul>';
+            minDates.forEach(date => {
+                result += `<li>${date}</li>`;
+            });
+            result += '</ul>';
+
+            // 月ごとの平均来場者数と最終日
+            result += '<h3>月ごとの平均来場者数</h3><ul>';
+            Object.keys(monthlyData).forEach(month => {
+                const totalReservations = monthlyData[month].reduce((a, b) => a + b, 0);
+                // 月の最終日を取得
+                const lastDay = new Date(month + '-01'); // 月の初日を指定
+                lastDay.setMonth(lastDay.getMonth() + 1); // 次の月に進む
+                lastDay.setDate(0); // その月の最終日に設定
+                const lastDate = lastDay.getDate(); // 最終日を取得
+                const avgReservations = (totalReservations / lastDate).toFixed(2);
+
+                console.log(totalReservations);
+
+                result += `<li>${month}: 平均${avgReservations}人</li>`;
+            });
+            result += '</ul>';
+
+            document.getElementById('output').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
