@@ -55,7 +55,7 @@
          * Array[{int, string}]のデータを処理、表示する。
          * int：予約数
          * string：予約日時(YYYY/MM/DD)
-         * 
+         *
          * 表示データ
          * 日ごとの予約：平均、最大数、最小数
          */
@@ -68,6 +68,11 @@
                 const date = item.date;
                 const month = date.slice(0, 7); // YYYY-MMの形式で取得
                 const count = item.count;
+
+                // 日時以外はスキップ(YYYY/MM/DDであるかのチェック)
+                if(isNaN(new Date(date).getDate())){
+                    return;
+                }
 
                 // 日ごとの集計
                 if (!dailyData[date]) {
