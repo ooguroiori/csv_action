@@ -57,11 +57,12 @@
          * string：予約日時(YYYY/MM/DD)
          *
          * 表示データ
-         * 日ごとの予約：平均、最大数、最小数
+         * 日ごとの予約：合計、平均、最大数、最小数
          */
         function calculateStatistics(data) {
-            const dailyData = {};
-            const monthlyData = {};
+            const dailyData = {};   //日ごとの予約数合計
+            const monthlyData = {}; //月ごとの予約数合計
+            const monthDays = {};   //月ごとの予約のある日集合
 
             //日別、月別の予約数集合を作成
             data.forEach(item => {
@@ -83,8 +84,10 @@
                 // 月ごとの集計
                 if (!monthlyData[month]) {
                     monthlyData[month] = [];
+                    monthDays[month] = new Set([]);
                 }
                 monthlyData[month].push(count);
+                monthDays[month].add(date);
             });
 
             // 日別の最大・最小来場者数
@@ -135,7 +138,9 @@
             result += '</ul>';
 
             // 月ごとの平均来場者数と最終日
-            result += '<h3>月ごとの平均来場者数</h3><ul>';
+            result += '<h3>月ごとの来場者数統計</h3><ul>';
+            result += '<table border="1">';
+            result += '<tr><td> 日時</td><td> 合計 </td><td> 日平均[/月日数] </td><td> 日平均[/予約のある日数] </td><td> 予約のある日数 </td></tr>';
             Object.keys(monthlyData).forEach(month => {
                 const totalReservations = monthlyData[month].reduce((a, b) => a + b, 0);
                 // 月の最終日を取得
@@ -143,13 +148,14 @@
                 lastDay.setMonth(lastDay.getMonth() + 1); // 次の月に進む
                 lastDay.setDate(0); // その月の最終日に設定
                 const lastDate = lastDay.getDate(); // 最終日を取得
-                const avgReservations = (totalReservations / lastDate).toFixed(2);
+                const avgMonthDays = (totalReservations / lastDate).toFixed(2);
+                const avgReservedDays = (totalReservations / monthDays[month].size).toFixed(2);
 
-                console.log(totalReservations);
+                console.log(monthDays[month]) // 取得した月ごとの予約のある日数
 
-                result += `<li>${month}: 平均${avgReservations}人</li>`;
+                result += `<tr><td> ${month} </td><td> ${totalReservations} </td><td>${avgMonthDays} </td><td> ${avgReservedDays} </td><td> ${monthDays[month].size} </td></tr>`;
             });
-            result += '</ul>';
+            result += '<table>';
 
             document.getElementById('output').innerHTML = result;
         }
